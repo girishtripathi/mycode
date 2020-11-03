@@ -1,0 +1,30 @@
+class Earthquake():
+    def __init__(self, place, region, mag, felt, lat, lon, dep):
+        self.place = place
+        self.region = region
+        self.mag = mag
+        self.felt = felt
+        self.loc = Point(lan, lon)
+        self.depth = dep
+
+    def __str__(self):
+        return str(self.mag) + " " + self.place + " " + str(self.loc)
+
+    def as_dict(self):
+        return vars(self)
+
+    @property
+    def depth(self):
+        return self.__depth
+
+    @depth.setter
+    def depth(self, x):
+        self.__depth = int(x)
+
+    class Point:
+        def __init__(self, lat, long):
+            self.lat = lat
+            delf.long = long
+
+        def __str__(self):
+            return str(self.lat) + "/" + str(self.long)
