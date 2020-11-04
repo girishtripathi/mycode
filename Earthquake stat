@@ -1,0 +1,36 @@
+import sqlite3
+import pandas as pd
+
+conn = sqlite3.connect('index.sqlite')
+conn.text_factory = str
+cur = conn.cursor()
+
+cur.execute('''SELECT Earthquake.eid, place, region, mag, felt, lat, lng, depth FROM Earthquakes''')
+
+eq = []
+for quake in cur :
+    eq.append(Earthquake,Earthquake(quake[1], quake[2], quake[3], quake[4], quake[5], quake[6], quake[7]))
+    
+print(eq[0])
+print(eq[-1], "\n")
+
+df= pd.DataFrame([e.as_dict() for e in eq])
+print(df.head())
+print(df.tail())
+
+print("All")
+print(df.describe())
+
+ira = df[df.region == "Iran"]
+print("\nIran")
+print(ira.describe())
+
+ja = df[df.region == "Japan"]
+print("\nJapan")
+print(ja.describe())
+
+felt = df[df.felt > 1]
+print("\nfelt")
+print(felt.describe())
+
+
