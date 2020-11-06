@@ -1,30 +1,18 @@
-class Earthquake():
-    def __init__(self, place, region, mag, felt, lat, lon, dep):
-        self.place = place
-        self.region = region
+class Earthquake_stats:
+    
+    def __init__(self, time, lat,long,depth,mag,magType,gap,place,status,locationSource ):
+        self.time = time
+        self.lat = lat
+        self.long = long
+        self.depth = depth
         self.mag = mag
-        self.felt = felt
-        self.loc = Point(lan, lon)
-        self.depth = dep
-
-    def __str__(self):
-        return str(self.mag) + " " + self.place + " " + str(self.loc)
+        self.magType = magType
+        self.gap = gap
+        self.place = place
+        self.status = status
+        self.locationSource = locationSource
 
     def as_dict(self):
-        return vars(self)
-
-    @property
-    def depth(self):
-        return self.__depth
-
-    @depth.setter
-    def depth(self, x):
-        self.__depth = int(x)
-
-    class Point:
-        def __init__(self, lat, long):
-            self.lat = lat
-            delf.long = long
-
-        def __str__(self):
-            return str(self.lat) + "/" + str(self.long)
+        return {'time': self.time, 'latitude': self.lat, 'longitude': self.long,'depth': self.depth,'magnitude': self.mag,'magnitudeType': self.magType,
+                'gap': self.gap,'place': self.place,'status': self.status,'locationSource': self.locationSource}
+        
