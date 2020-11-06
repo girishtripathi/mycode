@@ -1,36 +1,140 @@
-import sqlite3
+from csv import reader
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-conn = sqlite3.connect('index.sqlite')
-conn.text_factory = str
-cur = conn.cursor()
+# import Earthquake module
+from Earthquake import *
 
-cur.execute('''SELECT Earthquake.eid, place, region, mag, felt, lat, lng, depth FROM Earthquakes''')
+def create_dataframe_from_data():
+    Earthquake_list = []
+    # open file in read mode
+    with open('earthquake_data.csv', 'r') as read_obj:
+        # pass the file object to reader() to get the reader object
+        csv_reader = reader(read_obj)
+        # Iterate over each row in the csv using reader object
+        n = 1
+        for row in csv_reader:
+            flag = True 
+            for val in [row[0],row[1],row[2],row[3],row[4],row[5],row[10],row[13],row[19],row[20]]:
+                if len(str(val)) == 0:
+                    flag = False
+            if (n != 1) and (flag == True):
+                # row variable is a list that represents a row in csv
+                time = row[0]
+                lat = row[1]
+                long = row[2]
+                depth = row[3]
+                mag = row[4]
+                magType = row[5]
+                gap = row[7]
+                place = row[13].split(",")[-1].strip()
+                status = row[19]
+                locationSource = row[20]
+                earthquake = Earthquake_stats(time,lat,long,depth,mag,magType,gap,place,status,locationSource)
+                Earthquake_list.append(earthquake)
+            n += 1
+        #print(n)
+    earthquakes_df = pd.DataFrame([earthquake.as_dict() for earthquake in Earthquake_list])
+    #print(earthquakes_df)
+    return earthquakes_df
 
-eq = []
-for quake in cur :
-    eq.append(Earthquake,Earthquake(quake[1], quake[2], quake[3], quake[4], quake[5], quake[6], quake[7]))
+
+def clean_dataframe(earthquakes_df):
+    earthquakes_df['time'] = pd.to_datetime(earthquakes_df['time'])
+    earthquakes_df["depth"] = pd.to_numeric(earthquakes_df["depth"])
+    earthquakes_df["magnitude"] = pd.to_numeric(earthquakes_df["magnitude"])
+    earthquakes_df["gap"] = pd.to_numeric(earthquakes_df["gap"])
+    earthquakes_df["latitude"] = pd.to_numeric(earthquakes_df["latitude"])
+    earthquakes_df["longitude"] = pd.to_numeric(earthquakes_df["longitude"])
+    earthquakes_df['year'] = pd.DatetimeIndex(earthquakes_df['time']).year
     
-print(eq[0])
-print(eq[-1], "\n")
-
-df= pd.DataFrame([e.as_dict() for e in eq])
-print(df.head())
-print(df.tail())
-
-print("All")
-print(df.describe())
-
-ira = df[df.region == "Iran"]
-print("\nIran")
-print(ira.describe())
-
-ja = df[df.region == "Japan"]
-print("\nJapan")
-print(ja.describe())
-
-felt = df[df.felt > 1]
-print("\nfelt")
-print(felt.describe())
+    print("\n\n*** First 5 rows of Dataframe : ***\n",earthquakes_df.head(5))
+    print("\n\n*** Last 5 rows of Dataframe : ***\n",earthquakes_df.tail(5))
+    print("\n\n*** Column Names of Dataframe : ***\n",list(earthquakes_df.columns))
+    print("\n\n*** Total Number of Data = ",len(earthquakes_df))
+    return earthquakes_df
 
 
+def creat_plots(earthquakes_df):
+    print("\n\n*** Basic Plots for all Earthquakes ***\n")
+    # scatterplot using seaborn
+    sns.lmplot('magnitude', 'depth', data=earthquakes_df, hue='magnitudeType', fit_reg=False)
+    # set the title 
+    plt.title('ScatterPlot of magnitude vs depth for all earthquakes') 
+    # show the plot 
+    plt.show() 
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    earthquakes_df.groupby('year')['magnitude'].mean().plot(kind="line")
+    plt.title('line plot for mean depth of year for all earthquakes')
+    plt.show()
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    earthquakes_df.groupby('magnitudeType')['magnitude'].mean().sort_values().plot(kind='barh')
+    plt.title('bar plot for magnitudeType vs magnitude for all earthquakes')
+    plt.show()
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    earthquake_freq = earthquakes_df['place'].value_counts()
+    mask = earthquake_freq > 50
+    earthquake_freq = earthquake_freq.loc[mask]
+    values = earthquake_freq.values
+    labels = earthquake_freq.index
+    explode = [0.2]*len(earthquake_freq)
+    plt.pie(values,  labels=labels,autopct='%1.1f%%',explode=explode,counterclock=False, shadow=True)
+    plt.title('\n\nPie chart for countries that happended more than 50 earthquakes between (1900 ~ 2020)\n\n')
+    plt.show()
+    
+    #sns.catplot(x="magnitudeType", y="gap", hue="status", kind="bar", data=earthquakes_df)
+    sns.catplot(x="magnitudeType", kind="count", palette="ch:.25", data=earthquakes_df)
+    plt.title('Count plot of magnitudeType vs gap for each status') 
+    plt.show() 
+    
+    print("\n\n*** Create Plots for filtered Sub dataframe *** \n\n")
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    df_indonesia = earthquakes_df[earthquakes_df["place"] == "Indonesia"]
+    df_indonesia.groupby('year')['magnitude'].mean().plot(kind="line")
+    plt.title('line plot for mean depth of year for Indonesia')
+    plt.show()
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    large_eqrthquakes = earthquakes_df[earthquakes_df["magnitude"] > 7]
+    earthquake_freq = large_eqrthquakes['place'].value_counts()
+    mask = earthquake_freq >50
+    earthquake_freq = earthquake_freq.loc[mask]
+    values = earthquake_freq.values
+    labels = earthquake_freq.index
+    explode = [0.2]*len(earthquake_freq)
+    plt.pie(values,  labels=labels,autopct='%1.1f%%',explode=explode,counterclock=False, shadow=True)
+    plt.title('\n\nPie chart for countries that happened large earthquakes , magnitude > 7,count > 50\n\n')
+    plt.show()
+    
+
+
+## pip install shapely
+## conda install -c conda-forge geopandas
+## pip install descartes
+def create_geopandas_map(earthquakes_df):
+    from shapely.geometry import Point
+    import geopandas as gpd
+    from geopandas import GeoDataFrame
+    geometry = [Point(xy) for xy in zip(earthquakes_df['longitude'], earthquakes_df['latitude'])]
+    gdf = GeoDataFrame(earthquakes_df, geometry=geometry)   
+    
+    #this is a simple map that goes with geopandas
+    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+    gdf.plot(ax=world.plot(figsize=(14, 8)), marker='o', color='red', markersize=15)
+    plt.title('\n\nWorldMap with Earthquake Places\n\n')
+    plt.show()
+
+earthquakes_df = create_dataframe_from_data()
+earthquakes_df = clean_dataframe(earthquakes_df)
+creat_plots(earthquakes_df)
+create_geopandas_map(earthquakes_df)   
